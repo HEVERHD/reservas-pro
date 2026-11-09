@@ -71,10 +71,12 @@ Abre el repositorio en un Codespace: el contenedor trae .NET 10 y PostgreSQL con
 
 ```bash
 dotnet test
-dotnet run --project src/ReservasPro.Api --launch-profile http
+dotnet run --project src/ReservasPro.Api --launch-profile codespaces
 ```
 
-La API sirve también el panel en la misma dirección (puerto 5015). En desarrollo aplica las migraciones, crea
+El perfil `codespaces` escucha en todas las interfaces del contenedor para que el reenvío de puertos de
+Codespaces llegue a la API (con `localhost` responde 502). Abre el puerto 5015 desde la pestaña **Ports**.
+La API sirve también el panel en la misma dirección. En desarrollo aplica las migraciones, crea
 un negocio de ejemplo (`barberia-centro`) y escribe en la consola el usuario y la contraseña del dueño.
 
 ### En local
