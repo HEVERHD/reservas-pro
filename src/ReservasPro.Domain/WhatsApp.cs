@@ -13,7 +13,8 @@ public static class WhatsApp
     /// <summary>Mensaje que el cliente envía al negocio para confirmar su cita.</summary>
     public static string MensajeConfirmacion(Negocio negocio, Servicio servicio, Cita cita) =>
         $"Hola {negocio.Nombre}, soy {cita.ClienteNombre}. Confirmo mi cita de {servicio.Nombre} " +
-        $"el {cita.Fecha.ToString("dddd d 'de' MMMM", Es)} a las {cita.Inicio.ToString("h:mm tt", Es)}. " +
+        // Hora en 24 h: "10:00 a. m." ya termina en punto y la frase quedaba con punto doble
+        $"el {cita.Fecha.ToString("dddd d 'de' MMMM", Es)} a las {cita.Inicio.ToString("HH:mm", CultureInfo.InvariantCulture)}. " +
         $"Código de reserva: #{cita.Id}.";
 
     public static string EnlaceConfirmacion(Negocio negocio, Servicio servicio, Cita cita) =>

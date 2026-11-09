@@ -23,6 +23,7 @@ public class WhatsAppTests
 
         var mensaje = WhatsApp.MensajeConfirmacion(negocio, corte, cita);
 
-        Assert.StartsWith("Hola Barbería Centro, soy Ana. Confirmo mi cita de Corte el martes 10 de noviembre a las 10:00", mensaje);
+        Assert.Equal("Hola Barbería Centro, soy Ana. Confirmo mi cita de Corte el martes 10 de noviembre a las 10:00. " +
+            "Código de reserva: #0.", mensaje);
     }
 }
