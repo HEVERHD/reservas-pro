@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Los commits que hace un workflow con GITHUB_TOKEN no disparan otros workflows; así se puede correr a mano
+  workflow_dispatch:
 
 permissions:
   contents: read
