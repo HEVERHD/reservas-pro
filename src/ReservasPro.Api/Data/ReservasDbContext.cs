@@ -38,7 +38,8 @@ public sealed class ReservasDbContext(DbContextOptions<ReservasDbContext> option
             c.Property(x => x.ClienteNombre).HasMaxLength(120);
             c.Property(x => x.ClienteTelefono).HasMaxLength(15);
             c.Property(x => x.Estado).HasConversion<string>().HasMaxLength(20);
-            c.HasOne(x => x.Servicio).WithMany().HasForeignKey(x => x.ServicioId);
+            // Un servicio con citas no se puede borrar: se desactiva, y el historial de citas se conserva
+            c.HasOne(x => x.Servicio).WithMany().HasForeignKey(x => x.ServicioId).OnDelete(DeleteBehavior.Restrict);
             c.HasOne<Negocio>().WithMany().HasForeignKey(x => x.NegocioId);
             c.HasIndex(x => new { x.NegocioId, x.Fecha }); // la disponibilidad siempre consulta un día de un negocio
         });
