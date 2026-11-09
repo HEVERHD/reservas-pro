@@ -212,7 +212,7 @@ namespace ReservasPro.Api.Data.Migraciones
                     b.HasOne("ReservasPro.Domain.Servicio", "Servicio")
                         .WithMany()
                         .HasForeignKey("ServicioId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Servicio");
