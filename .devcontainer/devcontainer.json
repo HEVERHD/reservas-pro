@@ -1,0 +1,16 @@
+{
+  "name": "Reservas Pro (.NET 10 + PostgreSQL)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/reservas-pro",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-dotnettools.csdevkit", "humao.rest-client"]
+    }
+  },
+  "forwardPorts": [5015],
+  "portsAttributes": {
+    "5015": { "label": "API", "onAutoForward": "notify" }
+  },
+  "postCreateCommand": "dotnet restore ReservasPro.slnx"
+}

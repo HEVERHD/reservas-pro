@@ -1,0 +1,25 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/dotnet:1-10.0
+    volumes:
+      - ..:/workspaces/reservas-pro:cached
+    command: sleep infinity
+    environment:
+      # Base local del contenedor, sin contraseña: solo es accesible dentro de esta red de Docker
+      ConnectionStrings__Reservas: Host=db;Database=reservas;Username=postgres
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reservas
+      POSTGRES_HOST_AUTH_METHOD: trust # solo para desarrollo local; nunca en un servidor
+    volumes:
+      - datos-postgres:/var/lib/postgresql/data
+
+volumes:
+  datos-postgres:

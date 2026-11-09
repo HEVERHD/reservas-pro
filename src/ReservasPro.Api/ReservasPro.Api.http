@@ -1,0 +1,32 @@
+@api = http://localhost:5015
+@slug = barberia-centro
+
+### Negocio con sus servicios y horarios
+GET {{api}}/api/negocios/{{slug}}
+
+### Turnos libres de un servicio en una fecha
+GET {{api}}/api/negocios/{{slug}}/disponibilidad?servicioId=1&fecha=2026-11-17
+
+### Reservar (responde 201 con el enlace de WhatsApp; repetirla da 409)
+POST {{api}}/api/negocios/{{slug}}/citas
+Content-Type: application/json
+
+{
+  "servicioId": 1,
+  "fecha": "2026-11-17",
+  "inicio": "10:00:00",
+  "clienteNombre": "Ana Pérez",
+  "clienteTelefono": "+57 300 111 2233"
+}
+
+### Datos no válidos (400 con el detalle de cada campo)
+POST {{api}}/api/negocios/{{slug}}/citas
+Content-Type: application/json
+
+{
+  "servicioId": 0,
+  "fecha": "2026-11-17",
+  "inicio": "10:00:00",
+  "clienteNombre": "",
+  "clienteTelefono": "123"
+}
