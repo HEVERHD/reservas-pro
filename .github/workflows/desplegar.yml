@@ -1,0 +1,77 @@
+name: Desplegar en Azure
+
+# Manual mientras se configura Azure; cuando todo esté listo se puede cambiar a "push" sobre main.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # para iniciar sesión en Azure con OIDC, sin contraseñas guardadas en GitHub
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    environment: produccion
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Probar
+        run: dotnet test ReservasPro.slnx -c Release
+
+      - name: Publicar la API
+        run: dotnet publish src/ReservasPro.Api -c Release -o publicacion/api
+
+      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Desplegar en App Service
+        uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383 # v3.0.8
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          package: publicacion/api
+
+      - name: Comprobar que la API responde
+        run: |
+          for intento in 1 2 3 4 5 6; do
+            if curl -fsS "${{ vars.API_URL }}/health"; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::La API no respondió en /health después del despliegue"
+          exit 1
+
+  panel:
+    runs-on: ubuntu-latest
+    needs: api
+    environment: produccion
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Apuntar el panel a la API de producción
+        run: |
+          printf '{ "Api": { "Url": "%s/" } }\n' "${{ vars.API_URL }}" > src/ReservasPro.Panel/wwwroot/appsettings.Production.json
+
+      - name: Publicar el panel
+        run: dotnet publish src/ReservasPro.Panel -c Release -o publicacion/panel
+
+      - name: Desplegar en Static Web Apps
+        uses: Azure/static-web-apps-deploy@4d27395796ac319302594769cfe812bd207490b1 # v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: publicacion/panel/wwwroot
+          skip_app_build: true

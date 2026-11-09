@@ -87,8 +87,17 @@ dotnet user-secrets set "ConnectionStrings:Reservas" "Host=localhost;Database=re
 dotnet user-secrets set "Jwt:Clave" "<al menos 32 caracteres aleatorios>" --project src/ReservasPro.Api
 ```
 
+## CI/CD
+
+- **CI** ([`ci.yml`](.github/workflows/ci.yml)): en cada push y pull request revisa paquetes con vulnerabilidades
+  conocidas, compila con las advertencias como errores, ejecuta las pruebas y verifica que las migraciones estén al
+  día con el modelo. Las acciones de GitHub van fijadas por commit.
+- **Despliegue** ([`desplegar.yml`](.github/workflows/desplegar.yml)): API en Azure App Service y panel en Azure
+  Static Web Apps, con inicio de sesión OIDC (sin contraseñas de Azure en GitHub) y secretos en Key Vault.
+  Paso a paso en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
+
 ## Próximos pasos
 
-- Migraciones de EF Core para producción
-- CI con GitHub Actions y despliegue en Azure
+- Crear la migración inicial (`dotnet ef migrations add Inicial --project src/ReservasPro.Api --output-dir Data/Migraciones`)
+- Alta del primer negocio en producción
 - Página pública de reservas

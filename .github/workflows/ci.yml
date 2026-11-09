@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  compilar-y-probar:
+    runs-on: ubuntu-latest
+    steps:
+      # Las acciones van fijadas por commit, no por etiqueta, para que nadie pueda cambiarlas por debajo
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restaurar
+        run: dotnet restore ReservasPro.slnx
+
+      - name: Revisar paquetes con vulnerabilidades conocidas
+        run: |
+          dotnet list ReservasPro.slnx package --vulnerable --include-transitive | tee vulnerables.txt
+          if grep -q -- "^   >" vulnerables.txt; then
+            echo "::error::Hay paquetes con vulnerabilidades conocidas"
+            exit 1
+          fi
+
+      - name: Compilar
+        run: dotnet build ReservasPro.slnx --no-restore -c Release -warnaserror
+
+      - name: Probar
+        run: dotnet test ReservasPro.slnx --no-build -c Release --logger "trx;LogFileName=resultados.trx"
+
+      - name: Verificar que las migraciones estén al día con el modelo
+        if: hashFiles('src/ReservasPro.Api/Data/Migraciones/*.cs') != ''
+        run: |
+          dotnet tool restore
+          dotnet ef migrations has-pending-model-changes --project src/ReservasPro.Api --no-build --configuration Release

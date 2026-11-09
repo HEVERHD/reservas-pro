@@ -68,14 +68,25 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
+else
+    app.UseHsts(); // Azure termina el TLS; esto le dice al navegador que use siempre HTTPS
 
-    // En desarrollo se crea el esquema y un negocio de ejemplo; en producción se usan migraciones
-    using var scope = app.Services.CreateScope();
+using (var scope = app.Services.CreateScope())
+{
     var db = scope.ServiceProvider.GetRequiredService<ReservasDbContext>();
-    await db.Database.EnsureCreatedAsync();
-    await DatosDeEjemplo.CargarAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher<Usuario>>(), app.Logger);
+
+    // Con una sola instancia basta aplicar las migraciones al arrancar; con varias,
+    // conviene aplicarlas desde el pipeline de despliegue antes de publicar.
+    if (db.Database.GetMigrations().Any())
+        await db.Database.MigrateAsync();
+    else if (app.Environment.IsDevelopment())
+        await db.Database.EnsureCreatedAsync(); // solo hasta que exista la migración inicial
+    else
+        throw new InvalidOperationException("No hay migraciones. Crea la inicial con: dotnet ef migrations add Inicial");
+
+    if (app.Environment.IsDevelopment())
+        await DatosDeEjemplo.CargarAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher<Usuario>>(), app.Logger);
 }
 
 app.MapGet("/health", () => TypedResults.Ok(new { estado = "ok" })).ExcludeFromDescription();
