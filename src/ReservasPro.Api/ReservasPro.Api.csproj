@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.14" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
@@ -22,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ReservasPro.Domain\ReservasPro.Domain.csproj" />
     <ProjectReference Include="..\ReservasPro.Contracts\ReservasPro.Contracts.csproj" />
+    <ProjectReference Include="..\ReservasPro.Panel\ReservasPro.Panel.csproj" />
   </ItemGroup>
 
 </Project>

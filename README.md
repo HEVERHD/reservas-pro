@@ -72,11 +72,10 @@ Abre el repositorio en un Codespace: el contenedor trae .NET 10 y PostgreSQL con
 ```bash
 dotnet test
 dotnet run --project src/ReservasPro.Api --launch-profile http
-dotnet run --project src/ReservasPro.Panel --launch-profile http
 ```
 
-En desarrollo la API crea el esquema y un negocio de ejemplo (`barberia-centro`) y escribe en la consola el
-usuario y la contraseña del dueño para entrar al panel.
+La API sirve también el panel en la misma dirección (puerto 5015). En desarrollo aplica las migraciones, crea
+un negocio de ejemplo (`barberia-centro`) y escribe en la consola el usuario y la contraseña del dueño.
 
 ### En local
 
@@ -98,6 +97,5 @@ dotnet user-secrets set "Jwt:Clave" "<al menos 32 caracteres aleatorios>" --proj
 
 ## Próximos pasos
 
-- Crear la migración inicial (`dotnet ef migrations add Inicial --project src/ReservasPro.Api --output-dir Data/Migraciones`)
 - Alta del primer negocio en producción
 - Página pública de reservas

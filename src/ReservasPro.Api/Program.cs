@@ -94,6 +94,13 @@ app.MapReservasPublicas();
 app.MapAutenticacion();
 app.MapPanelDueno();
 
+// La API también sirve el panel de Blazor: una sola URL para la API y el panel,
+// sin CORS de por medio. Las rutas que no son de la API caen en index.html.
+app.UseBlazorFrameworkFiles();
+app.MapStaticAssets();
+app.MapFallback("/api/{**resto}", () => TypedResults.NotFound()).ExcludeFromDescription();
+app.MapFallbackToFile("index.html");
+
 app.Run();
 
 public partial class Program
