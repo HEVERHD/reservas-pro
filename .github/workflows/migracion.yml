@@ -41,6 +41,7 @@ jobs:
           NOMBRE: ${{ inputs.nombre }}
         run: |
           dotnet tool restore
+          dotnet restore ReservasPro.slnx # dotnet ef compila sin restaurar paquetes
           dotnet ef migrations add "$NOMBRE" --project src/ReservasPro.Api --output-dir Data/Migraciones
 
       - name: Comprobar que compila y que no quedan cambios sin migrar
