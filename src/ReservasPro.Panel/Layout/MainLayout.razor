@@ -1,0 +1,32 @@
+﻿@inherits LayoutComponentBase
+@inject SesionActual Sesion
+@inject NavigationManager Navegacion
+
+<AuthorizeView>
+    <Authorized>
+        <header class="barra">
+            <div class="marca">
+                <span class="logo" aria-hidden="true">◷</span>
+                <strong>@context.User.Identity?.Name</strong>
+            </div>
+            <nav aria-label="Secciones del panel">
+                <NavLink href="" Match="NavLinkMatch.All">Citas</NavLink>
+                <NavLink href="servicios">Servicios</NavLink>
+                <NavLink href="horarios">Horarios</NavLink>
+            </nav>
+            <button class="boton secundario" @onclick="CerrarSesion">Salir</button>
+        </header>
+    </Authorized>
+</AuthorizeView>
+
+<main class="contenido">
+    @Body
+</main>
+
+@code {
+    private async Task CerrarSesion()
+    {
+        await Sesion.CerrarAsync();
+        Navegacion.NavigateTo("login");
+    }
+}

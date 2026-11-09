@@ -9,6 +9,7 @@ public sealed class ReservasDbContext(DbContextOptions<ReservasDbContext> option
     public DbSet<Servicio> Servicios => Set<Servicio>();
     public DbSet<Horario> Horarios => Set<Horario>();
     public DbSet<Cita> Citas => Set<Cita>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -40,6 +41,13 @@ public sealed class ReservasDbContext(DbContextOptions<ReservasDbContext> option
             c.HasOne(x => x.Servicio).WithMany().HasForeignKey(x => x.ServicioId);
             c.HasOne<Negocio>().WithMany().HasForeignKey(x => x.NegocioId);
             c.HasIndex(x => new { x.NegocioId, x.Fecha }); // la disponibilidad siempre consulta un día de un negocio
+        });
+
+        model.Entity<Usuario>(u =>
+        {
+            u.Property(x => x.Email).HasMaxLength(254);
+            u.HasIndex(x => x.Email).IsUnique();
+            u.HasOne<Negocio>().WithMany().HasForeignKey(x => x.NegocioId);
         });
     }
 }

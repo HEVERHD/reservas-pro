@@ -8,9 +8,11 @@
       "extensions": ["ms-dotnettools.csdevkit", "humao.rest-client"]
     }
   },
-  "forwardPorts": [5015],
+  "forwardPorts": [5015, 5062],
   "portsAttributes": {
-    "5015": { "label": "API", "onAutoForward": "notify" }
+    "5015": { "label": "API", "onAutoForward": "notify" },
+    "5062": { "label": "Panel", "onAutoForward": "openBrowser" }
   },
-  "postCreateCommand": "dotnet restore ReservasPro.slnx"
+  // La clave de firma de los JWT se genera al crear el contenedor; nunca se guarda en el repositorio
+  "postCreateCommand": "dotnet restore ReservasPro.slnx && dotnet user-secrets set Jwt:Clave \"$(openssl rand -base64 48)\" --project src/ReservasPro.Api"
 }

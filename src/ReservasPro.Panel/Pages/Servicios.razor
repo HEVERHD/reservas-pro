@@ -1,0 +1,112 @@
+@page "/servicios"
+@attribute [Authorize]
+@inject ApiPanel Api
+@inject IJSRuntime Js
+
+<PageTitle>Servicios · Reservas Pro</PageTitle>
+
+<h1>Servicios</h1>
+
+<section class="tarjeta">
+    <h2>Nuevo servicio</h2>
+    <EditForm Model="nuevo" OnValidSubmit="Crear" FormName="nuevo-servicio" class="formulario-fila">
+        <DataAnnotationsValidator />
+        <div>
+            <label for="nombre">Nombre</label>
+            <InputText id="nombre" @bind-Value="nuevo.Nombre" placeholder="Corte clásico" />
+            <ValidationMessage For="() => nuevo.Nombre" />
+        </div>
+        <div>
+            <label for="duracion">Duración (min)</label>
+            <InputNumber id="duracion" @bind-Value="nuevo.DuracionMinutos" min="5" max="480" step="5" />
+            <ValidationMessage For="() => nuevo.DuracionMinutos" />
+        </div>
+        <div>
+            <label for="precio">Precio</label>
+            <InputNumber id="precio" @bind-Value="nuevo.Precio" min="0" step="1000" />
+            <ValidationMessage For="() => nuevo.Precio" />
+        </div>
+        <button class="boton" type="submit">Agregar</button>
+    </EditForm>
+</section>
+
+<Aviso Mensaje="@error" />
+
+@if (servicios is null)
+{
+    <p class="cargando">Cargando…</p>
+}
+else
+{
+    <ul class="lista">
+        @foreach (var servicio in servicios)
+        {
+            <li class="fila @(servicio.Activo ? "" : "cancelada")">
+                <span class="detalle">
+                    <strong>@servicio.Nombre</strong>
+                    <span class="suave">@servicio.DuracionMinutos min · @Formato.Pesos(servicio.Precio)</span>
+                </span>
+                @if (servicio.Activo)
+                {
+                    <button class="boton peligro" @onclick="() => Desactivar(servicio)">Desactivar</button>
+                }
+                else
+                {
+                    <span class="etiqueta">Inactivo</span>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private NuevoServicio nuevo = new();
+    private List<ServicioAdmin>? servicios;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => Cargar();
+
+    private async Task Cargar()
+    {
+        try
+        {
+            servicios = await Api.ServiciosAsync();
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+            servicios = [];
+        }
+    }
+
+    private async Task Crear()
+    {
+        error = null;
+        try
+        {
+            await Api.CrearServicioAsync(nuevo);
+            nuevo = new();
+            await Cargar();
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+        }
+    }
+
+    private async Task Desactivar(ServicioAdmin servicio)
+    {
+        if (!await Js.InvokeAsync<bool>("confirm", $"¿Dejar de ofrecer «{servicio.Nombre}»? Las citas ya reservadas se mantienen."))
+            return;
+        error = null;
+        try
+        {
+            await Api.DesactivarServicioAsync(servicio.Id);
+            await Cargar();
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+        }
+    }
+}

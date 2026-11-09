@@ -1,0 +1,97 @@
+@page "/"
+@attribute [Authorize]
+@inject ApiPanel Api
+@inject IJSRuntime Js
+
+<PageTitle>Citas · Reservas Pro</PageTitle>
+
+<div class="encabezado">
+    <h1>Citas</h1>
+    <div class="selector-fecha">
+        <button class="boton secundario" @onclick="() => CambiarDia(-1)" aria-label="Día anterior">‹</button>
+        <InputDate @bind-Value="fecha" @bind-Value:after="Cargar" aria-label="Fecha" />
+        <button class="boton secundario" @onclick="() => CambiarDia(1)" aria-label="Día siguiente">›</button>
+    </div>
+</div>
+
+<p class="suave">@Formato.Fecha(fecha) · @confirmadas confirmada@(confirmadas == 1 ? "" : "s")</p>
+
+<Aviso Mensaje="@error" />
+
+@if (citas is null)
+{
+    <p class="cargando">Cargando…</p>
+}
+else if (citas.Count == 0 && error is null)
+{
+    <p class="vacio">No hay citas este día.</p>
+}
+else
+{
+    <ul class="lista">
+        @foreach (var cita in citas)
+        {
+            <li class="fila @(cita.Cancelada ? "cancelada" : "")">
+                <span class="hora">@Formato.Hora(cita.Inicio) – @Formato.Hora(cita.Fin)</span>
+                <span class="detalle">
+                    <strong>@cita.ClienteNombre</strong>
+                    <span class="suave">@cita.Servicio · <a href="https://wa.me/@cita.ClienteTelefono" target="_blank" rel="noopener">@cita.ClienteTelefono</a></span>
+                </span>
+                @if (cita.Cancelada)
+                {
+                    <span class="etiqueta">Cancelada</span>
+                }
+                else
+                {
+                    <button class="boton peligro" @onclick="() => Cancelar(cita)">Cancelar</button>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private DateOnly fecha = DateOnly.FromDateTime(DateTime.Now);
+    private List<CitaDelDia>? citas;
+    private string? error;
+
+    private int confirmadas => citas?.Count(c => !c.Cancelada) ?? 0;
+
+    protected override Task OnInitializedAsync() => Cargar();
+
+    private Task CambiarDia(int dias)
+    {
+        fecha = fecha.AddDays(dias);
+        return Cargar();
+    }
+
+    private async Task Cargar()
+    {
+        error = null;
+        citas = null;
+        try
+        {
+            citas = await Api.CitasAsync(fecha);
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+            citas = [];
+        }
+    }
+
+    private async Task Cancelar(CitaDelDia cita)
+    {
+        if (!await Js.InvokeAsync<bool>("confirm", $"¿Cancelar la cita de {cita.ClienteNombre} a las {Formato.Hora(cita.Inicio)}?"))
+            return;
+        try
+        {
+            await Api.CancelarCitaAsync(cita.Id);
+            await Cargar();
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+        }
+    }
+}

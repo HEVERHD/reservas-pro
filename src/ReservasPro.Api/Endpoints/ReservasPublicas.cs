@@ -1,8 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using System.Data;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using ReservasPro.Api.Data;
+using ReservasPro.Contracts;
 using ReservasPro.Domain;
 
 namespace ReservasPro.Api.Endpoints;
@@ -18,20 +18,6 @@ public static class ReservasPublicas
         grupo.MapPost("/citas", Reservar).WithName("Reservar").RequireRateLimiting(Program.LimiteReservas);
         return grupo;
     }
-
-    public sealed record ServicioDto(int Id, string Nombre, int DuracionMinutos, decimal Precio);
-    public sealed record HorarioDto(DayOfWeek Dia, TimeOnly Apertura, TimeOnly Cierre);
-    public sealed record NegocioDto(string Nombre, string Slug, string ZonaHoraria, IEnumerable<ServicioDto> Servicios, IEnumerable<HorarioDto> Horarios);
-    public sealed record DisponibilidadDto(DateOnly Fecha, int ServicioId, IReadOnlyList<TimeOnly> Turnos);
-
-    public sealed record NuevaCita(
-        [Range(1, int.MaxValue)] int ServicioId,
-        DateOnly Fecha,
-        TimeOnly Inicio,
-        [Required, StringLength(120, MinimumLength = 2)] string ClienteNombre,
-        [Required, StringLength(20, MinimumLength = 7)] string ClienteTelefono);
-
-    public sealed record CitaCreadaDto(int Id, string Servicio, DateOnly Fecha, TimeOnly Inicio, TimeOnly Fin, string EnlaceWhatsApp);
 
     private static async Task<Results<Ok<NegocioDto>, NotFound>> ObtenerNegocio(string slug, ReservasDbContext db, CancellationToken ct)
     {
@@ -87,7 +73,7 @@ public static class ReservasPublicas
         return TypedResults.Created($"/api/negocios/{slug}/citas/{cita.Id}", dto);
     }
 
-    private static Task<Negocio?> BuscarNegocio(ReservasDbContext db, string slug, CancellationToken ct) =>
+    internal static Task<Negocio?> BuscarNegocio(ReservasDbContext db, string slug, CancellationToken ct) =>
         db.Negocios
             .Include(n => n.Servicios)
             .Include(n => n.Horarios)

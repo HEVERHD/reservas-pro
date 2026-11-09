@@ -1,8 +1,12 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using ReservasPro.Api.Auth;
 using ReservasPro.Api.Data;
 using ReservasPro.Api.Endpoints;
 using ReservasPro.Api.Errores;
+using ReservasPro.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,16 +23,39 @@ builder.Services.AddValidation();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ManejadorDeErrores>();
 
-var origenes = builder.Configuration.GetSection("Cors:Origenes").Get<string[]>() ?? [];
-builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.WithOrigins(origenes).AllowAnyHeader().WithMethods("GET", "POST")));
+// Autenticación del panel con JWT firmados por esta misma API
+var jwt = builder.Configuration.GetSection(JwtOpciones.Seccion).Get<JwtOpciones>() ?? new();
+builder.Services.AddSingleton(jwt);
+builder.Services.AddSingleton<EmisorDeTokens>();
+builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o =>
+    {
+        o.MapInboundClaims = false; // conserva los nombres cortos (sub, email, negocio_id)
+        o.TokenValidationParameters = new()
+        {
+            ValidIssuer = jwt.Emisor,
+            ValidAudience = jwt.Audiencia,
+            IssuerSigningKey = jwt.ClaveDeFirma(),
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+builder.Services.AddAuthorization();
 
-// Evita que un mismo cliente llene la agenda con reservas falsas
+var origenes = builder.Configuration.GetSection("Cors:Origenes").Get<string[]>() ?? [];
+builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.WithOrigins(origenes).AllowAnyHeader().WithMethods("GET", "POST", "DELETE")));
+
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // Evita que un mismo cliente llene la agenda con reservas falsas
     o.AddPolicy(Program.LimiteReservas, http => RateLimitPartition.GetFixedWindowLimiter(
         http.Connection.RemoteIpAddress?.ToString() ?? "desconocido",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromHours(1) }));
+    // Frena los intentos de adivinar contraseñas
+    o.AddPolicy(Program.LimiteLogin, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "desconocido",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1) }));
 });
 
 var app = builder.Build();
@@ -37,6 +64,8 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors();
 app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -46,15 +75,18 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ReservasDbContext>();
     await db.Database.EnsureCreatedAsync();
-    await DatosDeEjemplo.CargarAsync(db);
+    await DatosDeEjemplo.CargarAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher<Usuario>>(), app.Logger);
 }
 
 app.MapGet("/health", () => TypedResults.Ok(new { estado = "ok" })).ExcludeFromDescription();
 app.MapReservasPublicas();
+app.MapAutenticacion();
+app.MapPanelDueno();
 
 app.Run();
 
 public partial class Program
 {
     public const string LimiteReservas = "reservas";
+    public const string LimiteLogin = "login";
 }

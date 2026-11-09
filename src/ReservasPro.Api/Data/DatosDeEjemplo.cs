@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ReservasPro.Domain;
 
@@ -6,7 +8,9 @@ namespace ReservasPro.Api.Data;
 /// <summary>Crea un negocio de demostración en desarrollo para poder probar la API sin configurar nada.</summary>
 public static class DatosDeEjemplo
 {
-    public static async Task CargarAsync(ReservasDbContext db)
+    public const string EmailDueno = "dueno@barberia-centro.test";
+
+    public static async Task CargarAsync(ReservasDbContext db, IPasswordHasher<Usuario> hasher, ILogger logger)
     {
         if (await db.Negocios.AnyAsync())
             return;
@@ -24,5 +28,15 @@ public static class DatosDeEjemplo
 
         db.Negocios.Add(barberia);
         await db.SaveChangesAsync();
+
+        // La contraseña del dueño de ejemplo se genera al azar en cada base nueva y solo se muestra
+        // en la consola de desarrollo: así no hay ninguna credencial guardada en el repositorio.
+        var clave = Convert.ToBase64String(RandomNumberGenerator.GetBytes(12));
+        var dueno = new Usuario(barberia, EmailDueno);
+        dueno.CambiarHashClave(hasher.HashPassword(dueno, clave));
+        db.Usuarios.Add(dueno);
+        await db.SaveChangesAsync();
+
+        logger.LogWarning("Usuario de ejemplo del panel: {Email} / {Clave} (solo desarrollo)", EmailDueno, clave);
     }
 }

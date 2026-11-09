@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/ReservasPro.Api/ReservasPro.Api.csproj" />
+    <Project Path="src/ReservasPro.Contracts/ReservasPro.Contracts.csproj" />
     <Project Path="src/ReservasPro.Domain/ReservasPro.Domain.csproj" />
+    <Project Path="src/ReservasPro.Panel/ReservasPro.Panel.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ReservasPro.Domain.Tests/ReservasPro.Domain.Tests.csproj" />

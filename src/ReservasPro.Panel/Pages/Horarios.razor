@@ -1,0 +1,115 @@
+@page "/horarios"
+@attribute [Authorize]
+@inject ApiPanel Api
+
+<PageTitle>Horarios · Reservas Pro</PageTitle>
+
+<h1>Horarios de atención</h1>
+
+<section class="tarjeta">
+    <h2>Nueva franja</h2>
+    <p class="suave">Un día puede tener varias franjas, por ejemplo 9:00–12:30 y 14:00–19:00.</p>
+    <EditForm Model="nuevo" OnValidSubmit="Crear" FormName="nuevo-horario" class="formulario-fila">
+        <div>
+            <label for="dia">Día</label>
+            <InputSelect id="dia" @bind-Value="nuevo.Dia">
+                @foreach (var dia in Formato.Semana)
+                {
+                    <option value="@dia">@Formato.Dia(dia)</option>
+                }
+            </InputSelect>
+        </div>
+        <div>
+            <label for="apertura">Abre</label>
+            <input id="apertura" type="time" step="900" @bind="nuevo.Apertura" />
+        </div>
+        <div>
+            <label for="cierre">Cierra</label>
+            <input id="cierre" type="time" step="900" @bind="nuevo.Cierre" />
+        </div>
+        <button class="boton" type="submit">Agregar</button>
+    </EditForm>
+</section>
+
+<Aviso Mensaje="@error" />
+
+@if (horarios is null)
+{
+    <p class="cargando">Cargando…</p>
+}
+else
+{
+    <ul class="lista">
+        @foreach (var dia in Formato.Semana)
+        {
+            var franjas = horarios.Where(h => h.Dia == dia).ToList();
+            <li class="fila">
+                <span class="dia">@Formato.Dia(dia)</span>
+                <span class="franjas">
+                    @if (franjas.Count == 0)
+                    {
+                        <span class="suave">Cerrado</span>
+                    }
+                    @foreach (var franja in franjas)
+                    {
+                        <span class="franja">
+                            @Formato.Hora(franja.Apertura)–@Formato.Hora(franja.Cierre)
+                            <button class="quitar" @onclick="() => Quitar(franja)"
+                                    aria-label="Quitar @Formato.Dia(dia) de @Formato.Hora(franja.Apertura) a @Formato.Hora(franja.Cierre)">×</button>
+                        </span>
+                    }
+                </span>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private NuevoHorario nuevo = new();
+    private List<HorarioAdmin>? horarios;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => Cargar();
+
+    private async Task Cargar()
+    {
+        try
+        {
+            horarios = await Api.HorariosAsync();
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+            horarios = [];
+        }
+    }
+
+    private async Task Crear()
+    {
+        error = null;
+        try
+        {
+            await Api.CrearHorarioAsync(nuevo);
+            nuevo = new() { Dia = nuevo.Dia };
+            await Cargar();
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+        }
+    }
+
+    private async Task Quitar(HorarioAdmin franja)
+    {
+        error = null;
+        try
+        {
+            await Api.QuitarHorarioAsync(franja.Id);
+            await Cargar();
+        }
+        catch (ErrorDeApi e)
+        {
+            error = e.Message;
+        }
+    }
+}

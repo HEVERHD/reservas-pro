@@ -52,6 +52,14 @@ public sealed partial class Negocio
         return horario;
     }
 
+    /// <summary>Quita una franja de atención; las citas ya reservadas en ella se conservan.</summary>
+    public void QuitarHorario(int horarioId)
+    {
+        var horario = Horarios.SingleOrDefault(h => h.Id == horarioId)
+            ?? throw new ReglaDeNegocioException("El horario no existe.");
+        Horarios.Remove(horario);
+    }
+
     /// <summary>Las franjas en que el negocio atiende un día de la semana.</summary>
     public IEnumerable<Franja> FranjasDe(DayOfWeek dia) =>
         Horarios.Where(h => h.Dia == dia).Select(h => h.Franja);

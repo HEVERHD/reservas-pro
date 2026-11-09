@@ -1,0 +1,9 @@
+@* Mensaje de error de la última operación, con rol alert para que los lectores de pantalla lo anuncien *@
+@if (!string.IsNullOrEmpty(Mensaje))
+{
+    <p class="aviso" role="alert">@Mensaje</p>
+}
+
+@code {
+    [Parameter] public string? Mensaje { get; set; }
+}
